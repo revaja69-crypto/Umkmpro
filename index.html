@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BukuKas UMKM - Solusi Pembukuan Pintar</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BukuKas">
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2654/2654260.png">
+    
+    <!-- Scripts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        
+        @media (max-width: 768px) {
+            .desktop-sidebar { display: none; }
+            .mobile-nav { display: flex; }
+            .content-area { padding-bottom: 80px; }
+        }
+        @media (min-width: 769px) {
+            .desktop-sidebar { display: flex; }
+            .mobile-nav { display: none; }
+            .content-area { margin-left: 260px; }
+        }
+        .card-gradient { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); }
+        .active-nav-item { background-color: #eef2ff; color: #4f46e5; border-right: 4px solid #4f46e5; }
+        .modal { transition: opacity 0.25s ease; }
+        body.modal-active { overflow: hidden; }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- DESKTOP SIDEBAR -->
+    <aside class="desktop-sidebar fixed left-0 top-0 h-screen w-[260px] bg-white border-r border-slate-200 flex-col z-20">
+        <div class="p-6">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white">
+                    <i data-lucide="layout-dashboard"></i>
+                </div>
+                <h1 class="text-xl font-bold text-indigo-900 tracking-tight">BukuKas UMKM</h1>
+            </div>
+            
+            <nav class="space-y-1">
+                <button onclick="switchView('dashboard')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-slate-50 text-slate-600 font-medium" id="btn-dash">
+                    <i data-lucide="home" class="w-5 h-5"></i> Dashboard
+                </button>
+                <button onclick="switchView('transactions')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-slate-50 text-slate-600 font-medium" id="btn-trans">
+                    <i data-lucide="arrow-up-down" class="w-5 h-5"></i> Transaksi
+                </button>
+                <button onclick="switchView('categories')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-slate-50 text-slate-600 font-medium" id="btn-cat">
+                    <i data-lucide="tags" class="w-5 h-5"></i> Kategori
+                </button>
+                <button onclick="switchView('reports')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-slate-50 text-slate-600 font-medium" id="btn-rep">
+                    <i data-lucide="file-text" class="w-5 h-5"></i> Laporan
+                </button>
+            </nav>
+        </div>
+        
+        <div class="mt-auto p-6 space-y-3">
+            <!-- Install Button Desktop -->
+            <button id="install-btn-desktop" class="hidden w-full bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-100 transition-all">
+                <i data-lucide="download" class="w-4 h-4"></i> Instal Aplikasi
+            </button>
+            <div class="bg-indigo-50 p-4 rounded-xl">
+                <p class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Status Sistem</p>
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                    <span class="text-sm font-semibold text-indigo-900">Offline Ready</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MOBILE NAV -->
+    <nav class="mobile-nav fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 z-50 flex justify-around items-center px-2">
+        <button onclick="switchView('dashboard')" class="flex flex-col items-center gap-1 text-slate-400">
+            <i data-lucide="home" class="w-6 h-6"></i>
+            <span class="text-[10px] font-medium">Beranda</span>
+        </button>
+        <button onclick="switchView('transactions')" class="flex flex-col items-center gap-1 text-slate-400">
+            <i data-lucide="arrow-up-down" class="w-6 h-6"></i>
+            <span class="text-[10px] font-medium">Transaksi</span>
+        </button>
+        <button onclick="openTransactionModal()" class="flex flex-col items-center -mt-8">
+            <div class="w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg border-4 border-white">
+                <i data-lucide="plus" class="w-8 h-8"></i>
+            </div>
+        </button>
+        <button onclick="switchView('categories')" class="flex flex-col items-center gap-1 text-slate-400">
+            <i data-lucide="tags" class="w-6 h-6"></i>
+            <span class="text-[10px] font-medium">Kategori</span>
+        </button>
+        <button id="install-btn-mobile" class="hidden flex flex-col items-center gap-1 text-emerald-500">
+            <i data-lucide="download-cloud" class="w-6 h-6"></i>
+            <span class="text-[10px] font-medium">Instal</span>
+        </button>
+        <button onclick="switchView('reports')" id="report-nav-mobile" class="flex flex-col items-center gap-1 text-slate-400">
+            <i data-lucide="file-text" class="w-6 h-6"></i>
+            <span class="text-[10px] font-medium">Laporan</span>
+        </button>
+    </nav>
+
+    <!-- MAIN AREA -->
+    <main class="content-area min-h-screen">
+        <header class="hidden md:flex items-center justify-between p-6 sticky top-0 bg-[#f8fafc]/80 backdrop-blur-sm z-10">
+            <h2 id="current-view-title" class="text-2xl font-bold text-slate-900">Dashboard</h2>
+            <div class="flex gap-3">
+                <button onclick="openTransactionModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2">
+                    <i data-lucide="plus" class="w-5 h-5"></i> Transaksi Baru
+                </button>
+            </div>
+        </header>
+
+        <!-- DASHBOARD VIEW -->
+        <section id="view-dashboard" class="p-4 md:p-6 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="card-gradient rounded-3xl p-6 text-white shadow-xl">
+                    <p class="text-indigo-100 font-medium mb-1">Saldo Saat Ini</p>
+                    <h3 id="stat-balance" class="text-3xl font-bold">Rp 0</h3>
+                    <div class="mt-4 flex items-center gap-2 bg-white/20 w-fit px-3 py-1 rounded-full text-xs">
+                        <i data-lucide="wallet" class="w-3 h-3"></i> Kas UMKM
+                    </div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                    <div class="p-3 bg-emerald-50 rounded-2xl text-emerald-600 w-fit mb-4"><i data-lucide="trending-up"></i></div>
+                    <p class="text-slate-500 font-medium mb-1">Pemasukan (Bulan Ini)</p>
+                    <h3 id="stat-income" class="text-2xl font-bold text-emerald-600">Rp 0</h3>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                    <div class="p-3 bg-rose-50 rounded-2xl text-rose-600 w-fit mb-4"><i data-lucide="trending-down"></i></div>
+                    <p class="text-slate-500 font-medium mb-1">Pengeluaran (Bulan Ini)</p>
+                    <h3 id="stat-expense" class="text-2xl font-bold text-rose-600">Rp 0</h3>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                    <h4 class="font-bold text-lg mb-6 flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-5 h-5 text-indigo-600"></i> Analisa Keuangan</h4>
+                    <canvas id="mainChart" class="w-full max-h-[300px]"></canvas>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                    <div class="flex justify-between items-center mb-6">
+                        <h4 class="font-bold text-lg">Transaksi Terbaru</h4>
+                        <button onclick="switchView('transactions')" class="text-indigo-600 text-sm font-semibold">Lihat Semua</button>
+                    </div>
+                    <div id="recent-transactions" class="space-y-4"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TRANSACTIONS VIEW -->
+        <section id="view-transactions" class="p-4 md:p-6 hidden space-y-6">
+            <div class="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-slate-100 flex flex-wrap gap-4 items-center justify-between">
+                    <div class="relative w-full md:w-64">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                        <input type="text" id="search-trans" placeholder="Cari transaksi..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <select id="filter-type" class="text-sm bg-slate-50 border-none rounded-xl px-4 py-2 outline-none">
+                        <option value="all">Semua Tipe</option>
+                        <option value="income">Pemasukan</option>
+                        <option value="expense">Pengeluaran</option>
+                    </select>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wider">
+                            <tr>
+                                <th class="px-6 py-4 font-bold">Tanggal</th>
+                                <th class="px-6 py-4 font-bold">Kategori</th>
+                                <th class="px-6 py-4 font-bold">Keterangan</th>
+                                <th class="px-6 py-4 font-bold text-right">Jumlah</th>
+                                <th class="px-6 py-4 font-bold text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactions-table-body" class="divide-y divide-slate-100 text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- CATEGORIES VIEW -->
+        <section id="view-categories" class="p-4 md:p-6 hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                    <div class="flex justify-between items-center mb-6">
+                        <h4 class="font-bold text-lg flex items-center gap-2"><i data-lucide="arrow-up-circle" class="w-5 h-5 text-emerald-500"></i> Kategori Pemasukan</h4>
+                        <button onclick="openCategoryModal('income')" class="text-indigo-600 hover:bg-indigo-50 p-2 rounded-lg"><i data-lucide="plus"></i></button>
+                    </div>
+                    <div id="income-cats-list" class="space-y-3"></div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+                    <div class="flex justify-between items-center mb-6">
+                        <h4 class="font-bold text-lg flex items-center gap-2"><i data-lucide="arrow-down-circle" class="w-5 h-5 text-rose-500"></i> Kategori Pengeluaran</h4>
+                        <button onclick="openCategoryModal('expense')" class="text-indigo-600 hover:bg-indigo-50 p-2 rounded-lg"><i data-lucide="plus"></i></button>
+                    </div>
+                    <div id="expense-cats-list" class="space-y-3"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- REPORTS VIEW -->
+        <section id="view-reports" class="p-4 md:p-6 hidden space-y-6">
+            <div class="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm flex flex-col items-center text-center max-w-2xl mx-auto">
+                <div class="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 mb-6">
+                    <i data-lucide="download-cloud" class="w-10 h-10"></i>
+                </div>
+                <h3 class="text-2xl font-bold mb-2">Ekspor Laporan Keuangan</h3>
+                <p class="text-slate-500 mb-8">Unduh riwayat transaksi Anda dalam format Excel atau PDF.</p>
+                <div class="flex flex-col sm:flex-row gap-4 w-full">
+                    <button onclick="exportToExcel()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3">
+                        <i data-lucide="file-spreadsheet"></i> Excel (.xlsx)
+                    </button>
+                    <button onclick="exportToPDF()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-3">
+                        <i data-lucide="file-type-2"></i> PDF (.pdf)
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- TRANSACTION MODAL -->
+    <div id="modal-transaction" class="modal fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeTransactionModal()"></div>
+        <div class="bg-white rounded-[32px] w-full max-w-lg overflow-hidden shadow-2xl z-10 relative">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 id="modal-title" class="text-xl font-bold">Catat Transaksi</h3>
+                <button onclick="closeTransactionModal()" class="text-slate-400"><i data-lucide="x"></i></button>
+            </div>
+            <form id="form-transaction" class="p-6 space-y-4">
+                <input type="hidden" id="trans-id">
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="block">
+                        <span class="text-sm font-semibold text-slate-700">Tipe</span>
+                        <select id="trans-type" class="mt-1 block w-full rounded-xl border-slate-200 bg-slate-50 py-3 px-3" onchange="updateCatOptions()">
+                            <option value="income">Pemasukan</option>
+                            <option value="expense">Pengeluaran</option>
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-sm font-semibold text-slate-700">Tanggal</span>
+                        <input type="date" id="trans-date" class="mt-1 block w-full rounded-xl border-slate-200 bg-slate-50 py-3 px-3" required>
+                    </label>
+                </div>
+                <label class="block">
+                    <span class="text-sm font-semibold text-slate-700">Kategori</span>
+                    <select id="trans-category" class="mt-1 block w-full rounded-xl border-slate-200 bg-slate-50 py-3 px-3" required></select>
+                </label>
+                <label class="block">
+                    <span class="text-sm font-semibold text-slate-700">Jumlah (Rp)</span>
+                    <input type="number" id="trans-amount" class="mt-1 block w-full rounded-xl border-slate-200 bg-slate-50 py-3 px-4" required>
+                </label>
+                <label class="block">
+                    <span class="text-sm font-semibold text-slate-700">Keterangan</span>
+                    <input type="text" id="trans-note" class="mt-1 block w-full rounded-xl border-slate-200 bg-slate-50 py-3 px-4">
+                </label>
+                <button type="submit" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold">Simpan Transaksi</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- CATEGORY MODAL -->
+    <div id="modal-category" class="modal fixed inset-0 z-[101] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeCategoryModal()"></div>
+        <div class="bg-white rounded-[32px] w-full max-w-sm overflow-hidden shadow-2xl z-10 relative">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 id="cat-modal-title" class="text-xl font-bold">Kategori Baru</h3>
+                <button onclick="closeCategoryModal()" class="text-slate-400"><i data-lucide="x"></i></button>
+            </div>
+            <form id="form-category" class="p-6 space-y-4">
+                <input type="hidden" id="cat-type">
+                <input type="text" id="cat-name" placeholder="Nama Kategori" class="w-full rounded-xl border-slate-200 bg-slate-50 py-3 px-4" required>
+                <button type="submit" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold">Simpan</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-[200] hidden">
+        <div class="bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl text-sm font-medium flex items-center gap-3 whitespace-nowrap">
+            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+            <span id="toast-msg">Berhasil!</span>
+        </div>
+    </div>
+
+    <script>
+        let db;
+        const request = indexedDB.open("BukuKasUMKM_V1", 1);
+        request.onupgradeneeded = (e) => {
+            db = e.target.result;
+            if (!db.objectStoreNames.contains("transactions")) db.createObjectStore("transactions", { keyPath: "id", autoIncrement: true });
+            if (!db.objectStoreNames.contains("categories")) db.createObjectStore("categories", { keyPath: "id", autoIncrement: true });
+        };
+        request.onsuccess = (e) => { db = e.target.result; initApp(); };
+
+        let state = { transactions: [], categories: [], defaults: { income: ['Penjualan', 'Modal'], expense: ['Stok', 'Gaji', 'Sewa'] } };
+
+        async function initApp() {
+            lucide.createIcons();
+            await loadCategories();
+            await loadTransactions();
+            updateDashboard();
+            renderTransactions();
+            renderCategories();
+            switchView('dashboard');
+            setupPWAInstall();
+        }
+
+        // PWA Install Logic
+        let deferredPrompt;
+        function setupPWAInstall() {
+            const btnDesktop = document.getElementById('install-btn-desktop');
+            const btnMobile = document.getElementById('install-btn-mobile');
+            const reportNav = document.getElementById('report-nav-mobile');
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                // Tampilkan tombol instal
+                btnDesktop.classList.remove('hidden');
+                btnMobile.classList.remove('hidden');
+                reportNav.classList.add('hidden'); // Sembunyikan laporan di nav mobile agar muat tombol instal
+            });
+
+            const installAction = async () => {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    btnDesktop.classList.add('hidden');
+                    btnMobile.classList.add('hidden');
+                    reportNav.classList.remove('hidden');
+                }
+                deferredPrompt = null;
+            };
+
+            btnDesktop.addEventListener('click', installAction);
+            btnMobile.addEventListener('click', installAction);
+
+            window.addEventListener('appinstalled', () => {
+                deferredPrompt = null;
+                btnDesktop.classList.add('hidden');
+                btnMobile.classList.add('hidden');
+                reportNav.classList.remove('hidden');
+            });
+        }
+
+        async function loadCategories() {
+            return new Promise(resolve => {
+                const tx = db.transaction("categories", "readonly");
+                const store = tx.objectStore("categories");
+                const req = store.getAll();
+                req.onsuccess = async () => {
+                    state.categories = req.result;
+                    if (state.categories.length === 0) {
+                        const txAdd = db.transaction("categories", "readwrite");
+                        for (let type in state.defaults) {
+                            for (let name of state.defaults[type]) {
+                                await txAdd.objectStore("categories").add({ name, type });
+                            }
+                        }
+                        const req2 = store.getAll();
+                        req2.onsuccess = () => { state.categories = req2.result; resolve(); };
+                    } else resolve();
+                };
+            });
+        }
+
+        async function loadTransactions() {
+            return new Promise(resolve => {
+                const tx = db.transaction("transactions", "readonly");
+                const store = tx.objectStore("transactions");
+                const req = store.getAll();
+                req.onsuccess = () => {
+                    state.transactions = req.result.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    resolve();
+                };
+            });
+        }
+
+        function switchView(view) {
+            ['dashboard', 'transactions', 'categories', 'reports'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+                const btn = document.getElementById(`btn-${v.substring(0,4)}`);
+                if(btn) btn.classList.remove('active-nav-item');
+            });
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`btn-${view.substring(0,4)}`);
+            if(activeBtn) activeBtn.classList.add('active-nav-item');
+            document.getElementById('current-view-title').innerText = view.charAt(0).toUpperCase() + view.slice(1);
+        }
+
+        function formatIDR(n) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n); }
+
+        function updateDashboard() {
+            let inc = 0, exp = 0, bal = 0;
+            const now = new Date();
+            state.transactions.forEach(t => {
+                const amt = parseFloat(t.amount);
+                if(t.type === 'income') {
+                    bal += amt;
+                    if(new Date(t.date).getMonth() === now.getMonth()) inc += amt;
+                } else {
+                    bal -= amt;
+                    if(new Date(t.date).getMonth() === now.getMonth()) exp += amt;
+                }
+            });
+            document.getElementById('stat-balance').innerText = formatIDR(bal);
+            document.getElementById('stat-income').innerText = formatIDR(inc);
+            document.getElementById('stat-expense').innerText = formatIDR(exp);
+            renderRecentTransactions();
+            renderChart(inc, exp);
+        }
+
+        let chartInstance = null;
+        function renderChart(inc, exp) {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            if(chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels: ['Masuk', 'Keluar'], datasets: [{ data: [inc, exp], backgroundColor: ['#10b981', '#f43f5e'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, cutout: '75%' }
+            });
+        }
+
+        function renderRecentTransactions() {
+            const container = document.getElementById('recent-transactions');
+            const recent = state.transactions.slice(0, 5);
+            if(!recent.length) { container.innerHTML = "<p class='text-center py-10 text-slate-400 italic text-sm'>Belum ada transaksi.</p>"; return; }
+            container.innerHTML = recent.map(t => `
+                <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-transparent hover:border-slate-200 transition-all">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center ${t.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}">
+                            <i data-lucide="${t.type === 'income' ? 'arrow-down-left' : 'arrow-up-right'}" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-900">${t.note || t.category}</p>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold">${t.category} • ${t.date}</p>
+                        </div>
+                    </div>
+                    <p class="text-sm font-bold ${t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}">${formatIDR(t.amount)}</p>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderTransactions() {
+            const body = document.getElementById('transactions-table-body');
+            const filter = document.getElementById('filter-type').value;
+            const search = document.getElementById('search-trans').value.toLowerCase();
+            const filtered = state.transactions.filter(t => (filter === 'all' || t.type === filter) && (t.note.toLowerCase().includes(search) || t.category.toLowerCase().includes(search)));
+            body.innerHTML = filtered.map(t => `
+                <tr class="hover:bg-slate-50 transition-all">
+                    <td class="px-6 py-4 font-semibold text-slate-500 text-xs">${t.date}</td>
+                    <td class="px-6 py-4"><span class="px-3 py-1 bg-slate-100 rounded-full text-[10px] font-bold uppercase">${t.category}</span></td>
+                    <td class="px-6 py-4 font-medium">${t.note || '-'}</td>
+                    <td class="px-6 py-4 text-right font-bold ${t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}">${formatIDR(t.amount)}</td>
+                    <td class="px-6 py-4 text-center">
+                        <div class="flex gap-2 justify-center">
+                            <button onclick="editTransaction(${t.id})" class="text-indigo-400 hover:text-indigo-600"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                            <button onclick="deleteTransaction(${t.id})" class="text-rose-400 hover:text-rose-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderCategories() {
+            const incList = document.getElementById('income-cats-list');
+            const expList = document.getElementById('expense-cats-list');
+            const item = (c) => `
+                <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-100 transition-all">
+                    <span class="text-sm font-semibold">${c.name}</span>
+                    <button onclick="deleteCat(${c.id})" class="text-rose-400 hover:bg-rose-50 p-1 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+                </div>`;
+            incList.innerHTML = state.categories.filter(c => c.type === 'income').map(item).join('') || "<p class='text-xs text-slate-400'>Belum ada kategori.</p>";
+            expList.innerHTML = state.categories.filter(c => c.type === 'expense').map(item).join('') || "<p class='text-xs text-slate-400'>Belum ada kategori.</p>";
+            lucide.createIcons();
+        }
+
+        // Action Handlers
+        function openTransactionModal(editId = null) {
+            const modal = document.getElementById('modal-transaction');
+            const form = document.getElementById('form-transaction');
+            form.reset();
+            document.getElementById('trans-id').value = "";
+            document.getElementById('modal-title').innerText = "Catat Transaksi";
+            
+            if(editId) {
+                const t = state.transactions.find(x => x.id === editId);
+                document.getElementById('trans-id').value = t.id;
+                document.getElementById('trans-type').value = t.type;
+                updateCatOptions();
+                document.getElementById('trans-category').value = t.category;
+                document.getElementById('trans-date').value = t.date;
+                document.getElementById('trans-amount').value = t.amount;
+                document.getElementById('trans-note').value = t.note;
+                document.getElementById('modal-title').innerText = "Edit Transaksi";
+            } else {
+                document.getElementById('trans-date').valueAsDate = new Date();
+                updateCatOptions();
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeTransactionModal() { document.getElementById('modal-transaction').classList.add('hidden'); }
+
+        function updateCatOptions() {
+            const type = document.getElementById('trans-type').value;
+            const select = document.getElementById('trans-category');
+            const cats = state.categories.filter(c => c.type === type);
+            select.innerHTML = cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+        }
+
+        document.getElementById('form-transaction').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('trans-id').value;
+            const data = {
+                type: document.getElementById('trans-type').value,
+                category: document.getElementById('trans-category').value,
+                date: document.getElementById('trans-date').value,
+                amount: parseFloat(document.getElementById('trans-amount').value),
+                note: document.getElementById('trans-note').value
+            };
+            const tx = db.transaction("transactions", "readwrite");
+            const store = tx.objectStore("transactions");
+            if(id) { data.id = parseInt(id); await store.put(data); }
+            else await store.add(data);
+            
+            await loadTransactions();
+            updateDashboard();
+            renderTransactions();
+            closeTransactionModal();
+            showToast(id ? "Perubahan Disimpan" : "Berhasil Dicatat");
+        };
+
+        function editTransaction(id) { openTransactionModal(id); }
+        async function deleteTransaction(id) {
+            if(!confirm("Hapus transaksi ini?")) return;
+            const tx = db.transaction("transactions", "readwrite");
+            await tx.objectStore("transactions").delete(id);
+            await loadTransactions();
+            updateDashboard();
+            renderTransactions();
+            showToast("Transaksi Dihapus");
+        }
+
+        function openCategoryModal(type) {
+            document.getElementById('modal-category').classList.remove('hidden');
+            document.getElementById('cat-type').value = type;
+            document.getElementById('cat-modal-title').innerText = type === 'income' ? 'Kategori Pemasukan' : 'Kategori Pengeluaran';
+        }
+        function closeCategoryModal() { document.getElementById('modal-category').classList.add('hidden'); }
+
+        document.getElementById('form-category').onsubmit = async (e) => {
+            e.preventDefault();
+            const tx = db.transaction("categories", "readwrite");
+            await tx.objectStore("categories").add({ name: document.getElementById('cat-name').value, type: document.getElementById('cat-type').value });
+            await loadCategories();
+            renderCategories();
+            closeCategoryModal();
+            showToast("Kategori Ditambahkan");
+        };
+
+        async function deleteCat(id) {
+            if(!confirm("Hapus kategori ini?")) return;
+            const tx = db.transaction("categories", "readwrite");
+            await tx.objectStore("categories").delete(id);
+            await loadCategories();
+            renderCategories();
+        }
+
+        function exportToExcel() {
+            const data = state.transactions.map(t => ({ Tanggal: t.date, Kategori: t.category, Tipe: t.type === 'income'?'Masuk':'Keluar', Jumlah: t.amount, Catatan: t.note }));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Laporan");
+            XLSX.writeFile(wb, `Laporan_BukuKas_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("Laporan Keuangan UMKM", 14, 15);
+            const rows = state.transactions.map(t => [t.date, t.category, t.type === 'income'?'Masuk':'Keluar', formatIDR(t.amount)]);
+            doc.autoTable({ head: [['Tgl', 'Kat', 'Tipe', 'Jumlah']], body: rows, startY: 22 });
+            doc.save(`Laporan_BukuKas.pdf`);
+        }
+
+        function showToast(m) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = m;
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 2500);
+        }
+
+        document.getElementById('search-trans').oninput = renderTransactions;
+        document.getElementById('filter-type').onchange = renderTransactions;
+
+        // Register SW with strict caching
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js', { scope: './' })
+                    .then(reg => console.log('SW registered'))
+                    .catch(err => console.log('SW error', err));
+            });
+        }
+    </script>
+</body>
+</html>
