@@ -1,0 +1,22 @@
+```json
+{
+  "name": "BukuKas UMKM Profesional",
+  "short_name": "BukuKas",
+  "description": "Aplikasi pembukuan cerdas untuk UMKM Indonesia.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2654/2654260.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2654/2654260.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
