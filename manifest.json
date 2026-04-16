@@ -1,8 +1,8 @@
 {
   "name": "BukuKas UMKM Pro",
   "short_name": "BukuKas",
-  "description": "Pembukuan UMKM Digital Offline-First",
-  "start_url": ".",
+  "description": "Aplikasi Pembukuan UMKM Digital Offline-First",
+  "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",
@@ -17,7 +17,8 @@
     {
       "src": "https://cdn-icons-png.flaticon.com/512/2654/2654260.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
