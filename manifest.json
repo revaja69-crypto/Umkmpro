@@ -1,8 +1,8 @@
 {
-  "name": "BukuKas UMKM Pro",
+  "name": "BukuKas UMKM Profesional",
   "short_name": "BukuKas",
-  "description": "Aplikasi Pembukuan UMKM Digital Offline-First",
-  "start_url": "./index.html",
+  "description": "Aplikasi Pembukuan UMKM dengan Dukungan Offline Penuh",
+  "start_url": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",
